@@ -1,4 +1,5 @@
 ﻿using CanonImport.Models;
+using System.Globalization;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 using IODirectory = System.IO.Directory;
@@ -7,7 +8,7 @@ using MetadataDirectory = MetadataExtractor.Directory;
 namespace CanonImport;
 
 /// <summary>
-/// Finds photos on a memory card and copies them into date-based folders (yyyy\MM\dd) on the destination.
+/// Finds photos on a memory card and copies them into date-based folders (e.g. 2026\10 - October\25) on the destination.
 /// </summary>
 internal static class PhotoImporter
 {
@@ -44,9 +45,9 @@ internal static class PhotoImporter
         string fileName = Path.GetFileName(sourcePath);
         try
         {
-            // Work out the destination folder from the date the photo was taken, e.g. 2026\10\25.
+            // Work out the destination folder from the date the photo was taken, e.g. 2026\10 - October\25.
             DateTime captureDate = GetCaptureDate(sourcePath);
-            string relativeFolder = Path.Combine(captureDate.ToString("yyyy"), captureDate.ToString("MM"), captureDate.ToString("dd"));
+            string relativeFolder = Path.Combine(captureDate.ToString("yyyy"), captureDate.ToString("MM - MMMM", CultureInfo.InvariantCulture), captureDate.ToString("dd"));
             string destinationFolder = Path.Combine(destinationRoot, relativeFolder);
             IODirectory.CreateDirectory(destinationFolder);
 

@@ -1,6 +1,6 @@
 # CanonImport
 
-A command-line tool for copying photos off a camera's memory card onto a network share, sorted into date folders (`yyyy\MM\dd`) based on when each photo was taken.
+A command-line tool for copying photos off a camera's memory card onto a network share, sorted into date folders (e.g. `Canon EOS 1200D\2026\10 - October\25`) based on when each photo was taken.
 
 The date comes from each photo's EXIF data (`DateTimeOriginal`), so folders are correct even if a file's modified date has been changed. If the EXIF can't be read, the file's modified date is used instead.
 
@@ -34,7 +34,7 @@ Settings live in `appsettings.json` beside the executable:
 
 ```json
 {
-  "DestinationRoot": "\\\\Robert\\personal\\Photos",
+  "DestinationRoot": "\\\\Robert\\personal\\Photos\\Canon EOS 1200D",
   "Extensions": [ ".CR2", ".JPG" ]
 }
 ```
