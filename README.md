@@ -54,7 +54,7 @@ On Linux an optional `appsettings.Linux.json` beside the executable is loaded on
 
 ```json
 {
-  "DestinationRoot": "/mnt/robert/Photos/Canon EOS 1200D"
+  "DestinationRoot": "/mnt/robert/personal/Photos/Canon EOS 1200D"
 }
 ```
 
