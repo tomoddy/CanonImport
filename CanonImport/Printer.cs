@@ -8,12 +8,12 @@ namespace CanonImport;
 internal static class Printer
 {
     /// <summary>
-    /// Prompts the user to type the card's drive letter. Used when no drive was passed as a command-line argument.
+    /// Prompts the user to type the card's drive letter (Windows) or mount path (Linux). Used when none was passed as a command-line argument.
     /// </summary>
-    /// <returns>Drive letter</returns>
-    internal static string? PromptForDrive()
+    /// <returns>Drive letter or mount path</returns>
+    internal static string? PromptForCard()
     {
-        Console.Write("Card drive letter: ");
+        Console.Write(OperatingSystem.IsWindows() ? "Card drive letter: " : "Card mount path: ");
         return Console.ReadLine();
     }
 

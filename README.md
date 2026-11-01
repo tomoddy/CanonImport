@@ -6,10 +6,16 @@ The date comes from each photo's EXIF data (`DateTimeOriginal`), so folders are 
 
 ## Usage
 
-Run with the card's drive letter as the argument (`E`, `E:` and `E:\` all work):
+Run with the card's location as the argument. On Windows that's the drive letter (`E`, `E:` and `E:\` all work):
 
 ```
 CanonImport E
+```
+
+On Linux it's the folder the card is mounted at:
+
+```
+canonimport /run/media/$USER/EOS_DIGITAL
 ```
 
 Or run with no arguments and it'll prompt for one:
@@ -41,6 +47,40 @@ Settings live in `appsettings.json` beside the executable:
 
 - **DestinationRoot** — the folder the date folders are created under.
 - **Extensions** — which file types to copy. Add `".MOV"` to include videos.
+
+### Linux
+
+On Linux an optional `appsettings.Linux.json` beside the executable is loaded on top of `appsettings.json`, so the Windows UNC path can stay in the main file. It is gitignored because the mount point is specific to the machine:
+
+```json
+{
+  "DestinationRoot": "/mnt/robert/Photos/Canon EOS 1200D"
+}
+```
+
+#### Mounting the share permanently
+
+Install the CIFS tools, create the mount point and a credentials file only root can read:
+
+```
+sudo apt install cifs-utils
+sudo mkdir -p /mnt/robert
+sudo tee /etc/samba/credentials-robert > /dev/null <<'EOF'
+username=YOUR_USER
+password=YOUR_PASSWORD
+EOF
+sudo chmod 600 /etc/samba/credentials-robert
+```
+
+Add the share to `/etc/fstab` (`id -u` and `id -g` give your uid and gid, usually 1000):
+
+```
+echo '//Robert/personal /mnt/robert cifs credentials=/etc/samba/credentials-robert,uid=1000,gid=1000,iocharset=utf8,_netdev,nofail,x-systemd.automount,x-systemd.idle-timeout=60 0 0' | sudo tee -a /etc/fstab
+sudo systemctl daemon-reload
+sudo mount /mnt/robert
+```
+
+`x-systemd.automount` mounts it on first access and `nofail` stops boot hanging if Robert is offline. If `//Robert` doesn't resolve, use its IP address instead.
 
 ## Lightroom
 
@@ -75,3 +115,28 @@ To run it as a plain command from any terminal, add that folder to your PATH onc
 ```
 
 Then open a new terminal and run `CanonImport E` from anywhere.
+
+### Linux
+
+A second publish profile (`Properties/PublishProfiles/SelfContainedLinuxX64.pubxml`) produces a single, self-contained `CanonImport` binary, published to `~/.local/share/CanonImport/` alongside the settings files.
+
+```
+cd CanonImport
+dotnet publish -p:PublishProfile=SelfContainedLinuxX64
+```
+
+To run it as `canonimport` from any terminal, symlink it into `~/.local/bin` once (this is on the PATH by default on most distros):
+
+```
+mkdir -p ~/.local/bin
+ln -sf ~/.local/share/CanonImport/CanonImport ~/.local/bin/canonimport
+```
+
+If `~/.local/bin` isn't on your PATH, add it and reload the shell:
+
+```
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Then run `canonimport /run/media/$USER/EOS_DIGITAL` from anywhere.

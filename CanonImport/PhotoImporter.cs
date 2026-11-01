@@ -13,14 +13,29 @@ namespace CanonImport;
 internal static class PhotoImporter
 {
     /// <summary>
-    /// Turns a drive argument such as "E", "E:" or "E:\" into the drive's root path.
+    /// Turns the card argument into the card's root path. On Windows a drive such as "E", "E:" or "E:\" is expected, elsewhere an existing mount path.
     /// </summary>
-    /// <param name="drive">Drive letter as typed by the user</param>
-    /// <returns>Drive root (e.g. "E:\"), or null if the argument isn't a drive letter</returns>
-    internal static string? GetCardRoot(string? drive)
+    /// <param name="card">Drive letter or mount path as typed by the user</param>
+    /// <returns>Card root (e.g. "E:\" or "/run/media/tom/EOS_DIGITAL"), or null if the argument isn't valid</returns>
+    internal static string? GetCardPath(string? card)
     {
-        string letter = drive?.Trim().TrimEnd('\\', '/').TrimEnd(':') ?? string.Empty;
-        return letter.Length == 1 && char.IsAsciiLetter(letter[0]) ? $"{char.ToUpperInvariant(letter[0])}:\\" : null;
+        string value = card?.Trim() ?? string.Empty;
+        if (OperatingSystem.IsWindows())
+        {
+            string letter = value.TrimEnd('\\', '/').TrimEnd(':');
+            return letter.Length == 1 && char.IsAsciiLetter(letter[0]) ? $"{char.ToUpperInvariant(letter[0])}:\\" : null;
+        }
+        return IODirectory.Exists(value) ? Path.GetFullPath(value) : null;
+    }
+
+    /// <summary>
+    /// Finds the DCIM folder in the card's root, ignoring case because Linux mounts can be case-sensitive.
+    /// </summary>
+    /// <param name="cardRoot">Root path of the card</param>
+    /// <returns>Path to the DCIM folder, or null if there isn't one</returns>
+    internal static string? FindDcimFolder(string cardRoot)
+    {
+        return IODirectory.EnumerateDirectories(cardRoot).FirstOrDefault(path => string.Equals(Path.GetFileName(path), "DCIM", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>

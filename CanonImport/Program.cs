@@ -1,9 +1,13 @@
-﻿using CanonImport;
+using CanonImport;
 using CanonImport.Models;
 using Microsoft.Extensions.Configuration;
 
-// Load the destination share and the file extensions to import from appsettings.json next to the executable.
-IConfiguration configuration = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory).AddJsonFile("appsettings.json", optional: false).Build();
+// Load the destination share and the file extensions to import from appsettings.json next to the executable, with an optional Linux override.
+ConfigurationBuilder builder = new();
+builder.SetBasePath(AppContext.BaseDirectory).AddJsonFile("appsettings.json", optional: false);
+if (OperatingSystem.IsLinux())
+    builder.AddJsonFile("appsettings.Linux.json", optional: true);
+IConfiguration configuration = builder.Build();
 string destinationRoot = configuration["DestinationRoot"] ?? string.Empty;
 List<string> extensions = [.. configuration.GetSection("Extensions").GetChildren().Select(section => section.Value).OfType<string>()];
 if (string.IsNullOrWhiteSpace(destinationRoot) || extensions.Count == 0)
@@ -12,18 +16,18 @@ if (string.IsNullOrWhiteSpace(destinationRoot) || extensions.Count == 0)
     return 1;
 }
 
-// Accept the card's drive letter as an argument (e.g. `CanonImport E`, `E:` or `E:\`), or prompt for it if none was given.
-string? driveArgument = args.Length > 0 ? args[0] : Printer.PromptForDrive();
-string? cardRoot = PhotoImporter.GetCardRoot(driveArgument);
+// Accept the card's location as an argument (a drive letter such as `E` on Windows, a mount path on Linux), or prompt for it if none was given.
+string? cardArgument = args.Length > 0 ? args[0] : Printer.PromptForCard();
+string? cardRoot = PhotoImporter.GetCardPath(cardArgument);
 if (cardRoot is null)
 {
-    Printer.PrintError($"'{driveArgument}' isn't a valid drive letter.");
+    Printer.PrintError(OperatingSystem.IsWindows() ? $"'{cardArgument}' isn't a valid drive letter." : $"'{cardArgument}' isn't an existing folder.");
     return 1;
 }
 
-// The camera stores photos under DCIM, so bail out if it isn't there (wrong drive, or no card inserted).
-string dcimPath = Path.Combine(cardRoot, "DCIM");
-if (!Directory.Exists(dcimPath))
+// The camera stores photos under DCIM, so bail out if it isn't there (wrong location, or no card inserted).
+string? dcimPath = PhotoImporter.FindDcimFolder(cardRoot);
+if (dcimPath is null)
 {
     Printer.PrintError($"No DCIM folder found on {cardRoot}. Is the card inserted?");
     return 1;
