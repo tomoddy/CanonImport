@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Machine-specific Linux settings
+CanonImport/appsettings.Linux.json
