@@ -1,5 +1,6 @@
 ﻿using CanonImport.Models;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 using IODirectory = System.IO.Directory;
@@ -35,7 +36,7 @@ internal static class PhotoImporter
     }
 
     /// <summary>
-    /// Copies a single photo into its date folder on the destination, skipping it if it's already been imported.
+    /// Copies a single photo into its date folder on the destination, renamed to its capture date and time (e.g. 2026-11-07-22-11-32_7105.CR2), skipping it if it's already been imported.
     /// </summary>
     /// <param name="sourcePath">Full path of the photo on the card</param>
     /// <param name="destinationRoot">Root folder to import into</param>
@@ -52,10 +53,14 @@ internal static class PhotoImporter
             IODirectory.CreateDirectory(destinationFolder);
 
             // Find a free name. A file with the same name and size was imported on a previous run, so skip it. A different file with the same name means the camera's file counter has wrapped round, so keep both by adding a suffix.
-            string baseName = Path.GetFileNameWithoutExtension(fileName);
+            // Name the file after when it was taken, keeping the camera's file number so shots in the same second stay unique, e.g. IMG_7105.CR2 becomes 2026-11-07-22-11-32_7105.CR2.
+            string sourceBaseName = Path.GetFileNameWithoutExtension(fileName);
+            Match numberMatch = Regex.Match(sourceBaseName, @"\d+$");
+            string baseName = $"{captureDate.ToString("yyyy-MM-dd-HH-mm-ss", CultureInfo.InvariantCulture)}_{(numberMatch.Success ? numberMatch.Value : sourceBaseName)}";
             string extension = Path.GetExtension(fileName);
+            string newFileName = baseName + extension;
             long sourceSize = new FileInfo(sourcePath).Length;
-            string destinationPath = Path.Combine(destinationFolder, fileName);
+            string destinationPath = Path.Combine(destinationFolder, newFileName);
             for (int suffix = 1; File.Exists(destinationPath); suffix++)
             {
                 if (new FileInfo(destinationPath).Length == sourceSize)
@@ -67,13 +72,36 @@ internal static class PhotoImporter
             string tempPath = $"{destinationPath}.partial";
             File.Copy(sourcePath, tempPath, overwrite: true);
             File.Move(tempPath, destinationPath);
-            ImportStatus status = Path.GetFileName(destinationPath) == fileName ? ImportStatus.Copied : ImportStatus.Renamed;
+            ImportStatus status = Path.GetFileName(destinationPath) == newFileName ? ImportStatus.Copied : ImportStatus.Renamed;
             return new ImportResult(fileName, status, Path.Combine(relativeFolder, Path.GetFileName(destinationPath)));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return new ImportResult(fileName, ImportStatus.Failed, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Deletes the given photos from the card. Only call this once every one of them has been imported.
+    /// </summary>
+    /// <param name="paths">Full paths of the photos to delete</param>
+    /// <returns>An error message for each file that couldn't be deleted</returns>
+    internal static List<string> ClearCard(IReadOnlyList<string> paths)
+    {
+        List<string> errors = [];
+        foreach (string path in paths)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                errors.Add($"{Path.GetFileName(path)}: {ex.Message}");
+            }
+        }
+
+        return errors;
     }
 
     /// <summary>

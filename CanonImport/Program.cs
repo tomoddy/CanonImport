@@ -59,4 +59,15 @@ for (int i = 0; i < photos.Count; i++)
 
 Console.WriteLine();
 Printer.PrintSummary(results);
-return results.Any(result => result.Status == ImportStatus.Failed) ? 1 : 0;
+if (results.Any(result => result.Status == ImportStatus.Failed))
+    return 1;
+
+// Offer to clear the card, but only once every file has made it to the share. Only the files that were imported are deleted, so anything else on the card is left alone.
+if (Printer.PromptToClearCard(photos.Count))
+{
+    List<string> errors = PhotoImporter.ClearCard(photos);
+    Printer.PrintClearResult(photos.Count - errors.Count, errors);
+    return errors.Count > 0 ? 1 : 0;
+}
+
+return 0;

@@ -18,6 +18,35 @@ internal static class Printer
     }
 
     /// <summary>
+    /// Asks whether to delete the imported photos from the card. Anything other than "y" or "yes" keeps them.
+    /// </summary>
+    /// <param name="count">Number of imported files that would be deleted</param>
+    /// <returns>True if the user confirmed</returns>
+    internal static bool PromptToClearCard(int count)
+    {
+        Console.Write($"Delete the {count} imported files from the card? (y/N): ");
+        string? answer = Console.ReadLine()?.Trim();
+        return string.Equals(answer, "y", StringComparison.OrdinalIgnoreCase) || string.Equals(answer, "yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Prints how many files were deleted from the card, followed by any that couldn't be.
+    /// </summary>
+    /// <param name="deleted">Number of files deleted</param>
+    /// <param name="errors">Error message for each file that couldn't be deleted</param>
+    internal static void PrintClearResult(int deleted, IReadOnlyList<string> errors)
+    {
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.Write("[CLEARED] ");
+        Console.ResetColor();
+        Console.WriteLine($"{deleted} files deleted from the card.");
+        foreach (string error in errors)
+            PrintError(error);
+        Console.WriteLine();
+    }
+
+    /// <summary>
     /// Prints an error that stops the import before it starts.
     /// </summary>
     /// <param name="message">Error message</param>

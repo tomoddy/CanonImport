@@ -4,6 +4,8 @@ A command-line tool for copying photos off a camera's memory card onto a network
 
 The date comes from each photo's EXIF data (`DateTimeOriginal`), so folders are correct even if a file's modified date has been changed. If the EXIF can't be read, the file's modified date is used instead.
 
+Each photo is renamed to the date and time it was taken, followed by the camera's file number, e.g. `IMG_7105.CR2` becomes `2026-11-07-22-11-32_7105.CR2`. The camera is set to shoot RAW only, so only `.CR2` files are imported.
+
 ## Usage
 
 Run with the card's drive letter as the argument (`E`, `E:` and `E:\` all work):
@@ -23,10 +25,10 @@ Every matching file under the card's `DCIM` folder is copied, and each one print
 
 - **Copied** — new file, copied into its date folder.
 - **Skipped** — a file with the same name and size is already there, so it was imported on a previous run. Running the tool twice on the same card is safe.
-- **Renamed** — a *different* file with the same name is already there (the camera's file counter wraps at 9999), so the new one is saved with a suffix, e.g. `IMG_0001-1.CR2`.
+- **Renamed** — a *different* file with the same name is already there (the camera's file counter wraps at 9999), so the new one is saved with a suffix, e.g. `2026-11-07-22-11-32_0001-1.CR2`.
 - **Failed** — the copy failed; the error is shown. Files are copied to a `.partial` name and only renamed once complete, so an interrupted run never leaves a half-written photo behind.
 
-Nothing is ever deleted from the card. Format it in the camera once the photos are safely backed up.
+Nothing is deleted from the card unless you ask. If every file imported successfully, the tool finishes by asking `Delete the N imported files from the card? (y/N)`. Answering `y` deletes only the files that were just imported (anything else on the card is left alone); anything else keeps them. If any file failed, nothing is offered for deletion. You can still format the card in the camera instead.
 
 ## Configuration
 
@@ -35,7 +37,7 @@ Settings live in `appsettings.json` beside the executable:
 ```json
 {
   "DestinationRoot": "\\\\Robert\\personal\\Photos\\Canon EOS 1200D",
-  "Extensions": [ ".CR2", ".JPG" ]
+  "Extensions": [ ".CR2" ]
 }
 ```
 
